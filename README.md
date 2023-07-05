@@ -9,58 +9,288 @@
 
 ## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+# ALUMNI - BE
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Source: https://github.com/winsnyder/laravel-source-base
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Environment:
 
-## Learning Laravel
+- PHP version 8.2
+- Composer version 2.5.8
+- Laravel version 10.14.1
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Pattern: Repository Patterns
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+![IiSIj (1).png](readme/IiSIj_(1).png)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Create API
 
-## Laravel Sponsors
+1. Khởi tạo một interface khai báo các phương thức sử dụng trong repository
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Name convention: I<ObjectName>Repository.php
 
-### Premium Partners
+```php
+<?php
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+namespace App\Interfaces;
 
-## Contributing
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+interface IPostRepository
+{
+    public function getAllPost();
+    public function getPostById($postId);
+    public function getPublishedPosts();
+    public function createPost(StorePostRequest $storePostRequest);
+    public function updatePost($postId, UpdatePostRequest $updatePostRequest);
+    public function deletePost($postId);
+}
+```
 
-## Code of Conduct
+1. Tạo class Repository để implement các phương thức được khai báo
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```php
+<?php
 
-## Security Vulnerabilities
+namespace App\Repositories;
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
+use App\Interfaces\IPostRepository;
+use App\Models\Post;
 
-## License
+class PostRepository implements IPostRepository
+{
+    private Post $post;
+    public function __construct(Post $post)
+    {
+        $this->post = $post;
+    }
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+    public function getAllPost()
+    {
+        return $this->post->all();
+    }
+
+    public function getPostById($postId)
+    {
+        return $this->post->findOrFail($postId);
+    }
+
+    public function getPublishedPosts()
+    {
+        return $this->post->where('is_published', true)->get();
+    }
+
+    public function createPost(StorePostRequest $storePostRequest)
+    {
+        return $this->post->create($storePostRequest->toArray());
+    }
+
+    public function updatePost($postId, UpdatePostRequest $updatePostRequest)
+    {
+        $post = $this->post->find($postId);
+        if ($post) {
+            $post->update($updatePostRequest->toArray());
+        }
+    }
+
+    public function deletePost($postId)
+    {
+        $this->post->destroy($postId);
+    }
+}
+```
+
+1. Thực hiện binding  servcie provider dể inject repository vào trong controller
+
+App\Providers\RepositoryServiceProvider.php
+
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use App\Interfaces\IPostRepository;
+use App\Repositories\PostRepository;
+
+class RepositoryServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     */
+    public function register(): void
+    {
+        $this->app->bind(IPostRepository::class, PostRepository::class);
+    }
+
+    /**
+     * Bootstrap services.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
+```
+
+1. Tạo controller
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
+use App\Interfaces\IPostRepository;
+use Illuminate\Http\Request;
+
+class PostController extends Controller
+{
+    private IPostRepository $postRepository;
+
+    public function __construct(IPostRepository $postRepository)
+    {
+        $this->postRepository = $postRepository;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+
+        $data = $request->is_published === "true" ?
+            $this->postRepository->getPublishedPosts() :
+            $this->postRepository->getAllPost();
+
+        return response()->json([
+            "message" => 'success',
+            'data' => $data
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \App\Http\Requests\StorePostRequest  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(StorePostRequest $request)
+    {
+        return response()->json(
+            [
+                "message" => 'success',
+                'data' => $this->postRepository->createPost($request)
+            ],
+        );
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Request $request)
+    {
+        return response()->json([
+            "message" => 'success',
+            'data' => $this->postRepository->getPostById($request->route('id'))
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \App\Http\Requests\UpdatePostRequest  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function update(UpdatePostRequest $request)
+    {
+        return response()->json([
+            "message" => 'success',
+            'data' => $this->postRepository->updatePost($request->route('id'), $request)
+        ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Request $request)
+    {
+        $this->postRepository->deletePost($request->route('id'));
+
+        return response()->json([
+            "message" => 'success',
+        ]);
+    }
+}
+```
+
+1. Khởi tạo router
+
+```php
+Route::controller(PostController::class)->prefix('posts')->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}','show');
+    Route::post('/create', 'store');
+    Route::post('/update/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
+});
+```
+
+1. Api Response
+
+```json
+{
+    "message": "success",
+    "data": [
+        {
+            "id": 1,
+            "title": "Vel architecto.",
+            "content": "Ducimus nam minus et modi eveniet. Sit laborum temporibus aperiam. Temporibus ipsam eos doloremque qui. Ullam ut ipsa sequi soluta sunt ea eos.",
+            "is_published": 1,
+            "created_at": "2023-07-05T02:59:17.000000Z",
+            "updated_at": "2023-07-05T02:59:17.000000Z"
+        },
+        {
+            "id": 2,
+            "title": "Aliquam et.",
+            "content": "Corporis voluptas nobis sunt dolores repellat aut. Reprehenderit corporis alias nobis velit. Corporis expedita quae voluptatem magnam quo.",
+            "is_published": 1,
+            "created_at": "2023-07-05T02:59:17.000000Z",
+            "updated_at": "2023-07-05T02:59:17.000000Z"
+        }
+    ]
+}
+```
+
+### Build project by Docker and Nginx
+
+Resource:
+
+Image - Dockerfile
+
+Container  - docker-compose.yml
+
+Build Image
+
+```bash
+./build_image.sh
+```
+
+Build Container
+
+```bash
+docker-compose up -d
+```
