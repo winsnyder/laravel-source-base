@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PostController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/user', function() {
-    return 'thang.buingoc';
+Route::controller(PostController::class)->prefix('posts')->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}','show');
+    Route::post('/create', 'store');
+    Route::post('/update/{id}', 'update');
+    Route::delete('/{id}', 'destroy');
 });
