@@ -7,8 +7,6 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
-
 # ALUMNI - BE
 
 ### Source: https://github.com/winsnyder/laravel-source-base
@@ -21,7 +19,7 @@
 
 ### Pattern: Repository Patterns
 
-![IiSIj (1).png](/readme/IiSIj_(1).png)
+![IiSIj (1).png](./readme/IiSIj_(1).png)
 
 ### Create API
 
