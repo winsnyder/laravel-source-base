@@ -19,7 +19,7 @@
 
 ### Pattern: Repository Patterns
 
-![IiSIj (1).png](./readme/IiSIj_(1).png)
+![IiSIj (1).png](./pattern.png)
 
 ### Create API
 
