@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Interfaces\IPostRepository;
+use App\Interfaces\IUserRepository;
 use App\Repositories\PostRepository;
+use App\Repositories\UserRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -14,6 +16,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(IPostRepository::class, PostRepository::class);
+        $this->app->bind(IUserRepository::class, UserRepository::class);
     }
 
     /**

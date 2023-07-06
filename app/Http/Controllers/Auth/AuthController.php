@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Interfaces\IUserRepository;
 use App\Util\JwtUtil;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller {
+
+    private IUserRepository $userRepository;
+
+    public function __construct(IUserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
 
     public function login(Request $request) {
         $request->validate([
@@ -45,16 +51,16 @@ class AuthController extends Controller {
             'password' => 'required|string|min:6'
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-
+        $user = $this->userRepository->createUser($request);
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'User created falied',
+            ], 401);
+        }
         $token = Auth::login($user);
         return response()->json([
-            'status' => '200',
+            'status' => Response::HTTP_UNAUTHORIZED,
             'message' => 'User created successfully',
             'user' => $user,
             'authorization' => [

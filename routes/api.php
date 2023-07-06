@@ -23,13 +23,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::controller(PostController::class)->prefix('posts')->group(function () {
     Route::get('/', 'index')->middleware('jwt.verify');
     Route::get('/{id}','show');
-    Route::post('/create', 'store');
-    Route::post('/update/{id}', 'update');
+    Route::post('/create', 'store')->middleware('transaction');
+    Route::post('/update/{id}', 'update')->middleware('transaction');
     Route::delete('/{id}', 'destroy');
 });
 
 //Auth
 Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('login', 'login');
-    Route::post('register', 'register');
+    Route::post('register', 'register')->middleware('transaction');
 });
