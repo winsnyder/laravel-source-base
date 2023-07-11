@@ -55,6 +55,15 @@ services:
             - ./mysql/my.cnf:/etc/mysql/my.cnf
         networks:
             - app-network
+      
+    #Redis Service
+    redis:
+        container_name: redis
+        image: "redis:alpine"
+        restart: unless-stopped
+        ports:
+          - "6379:6379"
+
 
 #Docker Networks
 networks:
